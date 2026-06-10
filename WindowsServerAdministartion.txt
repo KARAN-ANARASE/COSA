@@ -1,0 +1,268 @@
+Add Local User:
+Dashboard->Tools->Computer Management->Right click on "User"->New user
+->fill data->unckeck all []->create
+
+Provide Administrator Privilages to local user:
+select user->right click->properties->member of->add->type "Administrator"
+->check name->ok
+
+change computer name:
+Server Manager->Local Server->computer name->change->MUSTANG->ok->restart
+
+Static IP Conf:
+Server manager->Local Server->Ethernet->Ethernet0->properties->IPv4
+->use the following ip address->fill->ok->close->ok->Refresh
+
+Remote management:
+SSH:
+Server Manager->Tools->services->OpenSSH SSH Server (in list)->Start
+->properties (OpenSSH SSH Server)->startup type->manual to automatic
+
+now firewall
+Tools->windows defender firewall with Advanced security->inbound rules
+->OpenSSH Server(sshd)->Advanced->[/][/][/] public private domain
+->Apply->ok
+
+come on client:> ssh Administrator@ser.ver.ip.add
+
+(RDP) Remote Desktop Protocol:
+Server Manager->Local Server->Remote Desktop->Allow remote connection to this computer
+->ok->Refresh
+
+come on client:>
+start[+]->RDP->ser.ver.ip.add->user/pass->ok
+
+DNS:
+Server Manager->Local Server->computer name->change->more->master.com->
+ok->ok->Restart
+Server Manager->Local Server->Ethernet0->Ethernet0->properties->ipv4->
+use the following DNS server addresses->ser.ver.ip.add->ga.te.wa.y->ok->
+ok->close->Refresh
+
+Server manager->manage->Add Roles and features->next->next->[/]DNS Server
+->Add feature->next->next->[/]->yes->install->close
+
+Add forward lookup zone:>
+Server manager->Tools->DNS->right click on(MUSTANG)->New zone->Next->
+Primary zone->Next->Forward lookup zone->Next->master.com->Next->Next->
+Do not allow dynamic updates->Next->Finish
+
+Add Reverse lookup zone:>
+Server manager->Tools->DNS->right click on(MUSTANG)->New zone->Next->
+Primary zone->Next->Reverse lookup zone->Next->ipv4->Next->Network IP->
+Next->Next->Next->Finish
+
+Add AAAA record:>
+DNS manager->forward zone->right click on(master.com)->New host(A or AAAA)
+->ser.ver.ip.add->[]->Add host
+
+Add Reverse Record:>
+Reverse lookup zone->right click on --.168.192in-addr.arpa->
+New Pointer(PTR)->ser.ver.ip.add->master.com->ok
+
+verify:> powershell->nslookup master.com
+
+DHCP:
+Server Manager->Add Roles and Features->Next->Next->DHCP server->Add feature->Next
+->Next->[/]->install->close
+
+Configure DHCP server:>
+Server Manager->DHCP->!more->compleate DHCP configuration->Next->
+skip AD authorization->commit->close
+Server manager->Tools->DHCP->MUSTANG.master.com->right click on (IPv4)->
+New scope->Next->pool1 pool1->192.168...150-192.168...250->Next->
+Next->Next->ga.te.wa.y->ser.ver.ip.add->Next->Next->Finish
+
+verify:>on client machine:>[+]+R->ncpa.cpl->>check ip is in network range.
+
+IIS (Internet information Service):
+Server Manager->Add Roles and Features->Next->Next->Web Server(IIS)->
+Next->Next->[/]->install->close
+Open Browser(Edge)->search "localhost" <-it will show default page.
+File Explorer>inetpub>wwwroot>add your page "index.html"
+
+Server Manager->Tools->(IIS)Manager->Mustang->Sites->Default website ->Default Document
+->Add->index.html
+
+configure Virtual Directory/Alias:>
+Server Manager->Tools->(IIS)manger->MUSTANG->sites->Default web site->
+View Virtual Directories->Add Virtual Directory->Aliasname->path->ok
+
+IIS:Basic Authintication:>
+Server Manager->Add Roles and feature->webserver IIS-webserver-security
+-basic Authentication->Next->Next->[/]->install
+
+Tools->services->World Wide Web Publishing service->restart
+
+create folder inetpub/wwwroot/"secret"->properties->security->Edit->Add ->user1->
+check name->give permission->ok->ok->ok
+
+(IIS)manager->sites->Default website->"secret"->Authentication->
+Anonymous Authentication-Disabled->Basic Authentication-Enable
+
+verify:>on browser>master.com/secret>>it will ask for user/pass
+
+FTP Server:
+Server Manager->Add Roles and features->Next->Next->web server-FTP server
+->Next->Next->[/]->install
+
+configuration:>
+(IIS)manager->FTP firewall support->range 60000-60100->Apply
+Tools->Sevices->microsoft FTP service->restart
+
+Add FTP site:>
+Tools->computer-management->local user and group->group->new group
+->ftp->add->user1 user2->check name->add->ok close
+
+file explorer->inetpub/ftproot/"new_webpage.html"->right click on ftproot
+->properties->security->edit->add->ftp->checkname->add->ok->ok->ok
+
+Add website:>
+Tools->(IIS)manager->rightclick on (sites)->Add FTP site->name->path
+->Next->No SSL->Next->Basic[/]->Specified roles or user group->
+group name "ftp"->[/][/]read write->finish
+
+Access FTP Client:>on client machine
+https://filezilla-project.org/download.php?type=client
+install this software then
+host:ser.ver.ip.add username:user1 password:AnurupKaran@123 port:21 
+quick connect.
+
+NFS(Network File Sharing):
+Server manager->Manage->Add Roles and Features->Next->Next->Next->
+File and Storage Services->File and iSCSI Services->Server for NFS->
+Next->Client for NFS->Next->Install
+
+configuration:>
+Server Manager->File and storage services->Shares->Tasks->New Shares
+->NFS Share - Quick->Next->Type a custom path:Browse(c:\inetpub\wwwroot\a) ->Next->Next->
+Kerberos [][][] [/]No server authentication [/]Enable unmapped user access
+->Next->Add->All Machines->share permission:Read/write->Add->Next->create
+
+Linux Client:>
+dnf install nfs-utils -y ->mkdir /winshare ->
+mount -t nfs ser.ver.ip.add:/a /winshare ->df -h ->cd /winshare ->ls
+
+Windows Client:>
+[+] search Turn Windows features on or off->Services for NFS->       Client for NFS->OK
+->[+] search powershell->Command:>New-PSDrive -Name Z -PSProvider FileSystem -Root "\\ser.ver.ip.add:\a"
+file explorer->Network->Refresh.
+
+WDS(Windows Deployment Server):
+Server manager->Add Roles and Features->Next->Next->Next->
+Windows Deployment Services->Next->Next->Next->Next->[/]->Install->close
+
+Configure:>
+WDS->right click on(MUSTANG)->Windows Deployment Services Management console->server
+->right click on(MUSTANG.master.com)->Configure Server->Next->Standalone server->Next
+->Next->yes->Next->Respond only to all client computers->Next->Finish
+
+File Explorer->This PC->right click on(DVD Drive (mount point))->Open
+->select all->copy->This PC->Local Disk(C)->RemoteInstall->paste
+Server manager->WDS->right click on(MUSTANG)->Windows Deployment Services Management console
+->server->MUSTANG->right click on (Boot Images)->Add boot Images->Browse
+->This PC/DVD Drive (Mount Point)/sources/boot.wim->open->Next->Next->Next->Finish
+->Install Images->right click->Add Install Images->Next->Browse->
+This PC/DVD Drive (Mount Point)/sources/install.wim->open->Next->Next->
+Next->Finish
+Server Manager->WDS->Windows Deployment Services Management console->server
+->right click on(MUSTANG.master.com)->All Tasks>Start
+
+Windows server backup:
+Add special drive for backup:>
+VM->right click on(Windows server 2025)->settings->Add->Hard Drive->Next->
+SCSI->Next->Next->60G->Next->Finish (server get restart Automatically)
+[+]search Create and format hard disk partition->60G unallocated->
+right click on(Disk 1)->online->right click on (Disk 1)->Initialize Disk
+->ok->right click on 59.98G Unallocated->New Simple Volume->Next->Next->
+Next->Next->Finish
+
+Installation:>
+Server Manager-> Add roles and Features->Next->Next->Next->
+Windows Server Backup->Next->[/]->install->Finish->close
+
+Store Backup:>
+Server Manager->Tools->Windows Server Backup->Local Backup->Backup Once->
+Next->(Full server) (custom) Next->Next->select Disk newly added->Next->OK->backup->close
+
+Server Recover:>
+Server Manager->Tools->Windows Server Backup->Local Backup->Recover->
+This server->Next->choose time->Next->Files and Folder->Next->
+Double click on (MUSTANG)->select Disk->Next->Original Location->Next->
+Recover->Close.
+
+Hyper-V Virtualization Environment:
+installation:>
+Server Manager->Add Roles and Features->Next->Next->Hyper-V->Ethernet->
+Next->[/]->install->Finish
+
+Server Manager->Tools->Hyper-V manager->right click on(MUSTANG)->New->VM
+->Next->Finish->right click on->New Virtual machine->start.
+
+NIC Teaming (Network Interface Card):
+Add One More Etherner:>
+VM->right click on(Windows server 2025)->settings->Add->Network Adapter->
+Finish->Server manager->Local server->Ethernet0->Provide ip and DNS ip to 
+New_Ethernet->Server Manager->Local Server->NIC Teaming->Tasks->[/][/]->
+Additional Properties (do this as per requirement)->ok
+
+AD (Active Directory):
+Installation:>
+Server manager->Add Roles and Features->Next->Next->Next->
+Active Directory Domain Services->Next->Next->[/]->Install
+
+configuration:>
+Server Manager->AD DS->more...->Add a new forest->master.com->Next->
+Passwords->Next->Next->Next->Next->Next->Install
+
+Server Manager->Tools->DNS->Forward zone->right click on(master.com)->
+New Domain->_msdcs->open->right click->New domain->dc->open->right click ->New domain->
+_tcp->open->right click->Other New Records->Service Location(SRV)
+->Create Record->Service:_ldap->host:master.com->ok
+
+Windows client:>
+settings->About->Advanced System settings->Computer Name->change->more->
+master.com->ok->Domain->master.com->ok
+
+Add User in AD:
+Server Manager->Tools->Active Directory users and Computers->master.com->
+right click on(Users)->New->User->fill details:user logon name:first_name
+->password:[][][][]->Next->Finish
+
+Add Group in AD:
+Server Manager->Tools->Active Directory users and Computers->master.com->
+right click on(Group)->fill details->OK
+
+Group Policy (GPO):
+Deploing Desktop Backgroung with group policy:>
+Create folder in c:\ as wallpaper->right click on(wallpaper)->Properties
+->sharing->share->Everyone->read->ok->ok->close->insert image.jpeg in wallpaper folder
+
+Windows Client:>
+[+] + R ->\\MUSTANG\wallpaper\->do login will show image.jpeg here.
+
+Set Wallpaper on all clients through Server (AD):
+[+] + R ->gpmc.msc->forest:master.com->Domains->right click on(master.com)
+->Create a GPO in this domain, and Link it here...->Name:wallpaper->
+master.com->right click on->wallpaper (just we created it)->Edit->
+User Configuration->Policies->Administrative Templates->Desktop->Desktop->
+right click ok->Desktop Wallpaper->Edit->Enable->paste\path\of\images.jpeg
+->Apply->ok->[+] + R->gpupdate /force.
+
+Prevent users by changing wallpaper:
+[+] + R ->gpmc.msc->forest:master.com->Domains->master.com->right click on (wallpaper)
+->Edit->user configuration->Policies->Administrative Templates->Control Pannel
+->Personalization->right click on (Prevent changing Desktop background)->Edit->Enable
+->Apply->OK[+] + R->gpupdate /force.
+
+DFS (Distributed File System):
+installation:>
+Server Manager->Add Roles and Features->Next->Next->File and storage services
+->File and iSCSI Services->[/]file server[/]DFS Namespace[/]DFS Replication->Next->
+Next->[/]->install->Finish
+
+[+] search DFS Management->Namespace->New Namespace->server:MUSTANG->Next->Name:DFS01
+Edit Settings->give full permissions->ok->Next->Stand-alone namespace->Next->Create.
+
+
+
